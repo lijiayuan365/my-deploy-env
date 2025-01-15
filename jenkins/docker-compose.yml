@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  jenkins:
+    container_name: my_jenkins
+    image: jenkins/jenkins:latest
+    privileged: true  # 需要特权模式来运行Docker
+    user: root
+    ports:
+      - "8080:8080"  # Jenkins Web界面端口
+      - "50000:50000"  # Jenkins agent端口
+    volumes:
+      - ./jenkins_home:/var/jenkins_home  # Jenkins数据持久化
+      - /var/run/docker.sock:/var/run/docker.sock  # 映射Docker socket以支持Docker命令
+      - /usr/bin/docker:/usr/bin/docker  # 映射Docker二进制文件
+      - $HOME/.ssh:/root/.ssh  # 映射SSH密钥目录以支持Git操作
+    environment:
+      - TZ=Asia/Shanghai
+    restart: always 
