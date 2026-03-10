@@ -1,0 +1,23 @@
+storage: /verdaccio/storage
+auth:
+  htpasswd:
+    file: /verdaccio/storage/htpasswd
+    max_users: 0   # 0 = 禁止自注册，只能由管理员用方式二添加
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+packages:
+  '@*/*':                # 所有 scoped 包（@任何scope/任何包）
+    access: $all
+    publish: $authenticated
+    unpublish: $authenticated  # 可选，如果你想控制 unpublish
+    proxy: npmjs             # 如果你需要 proxy 上游
+  '**':
+    access: $all
+    publish: $authenticated
+    proxy: npmjs
+log:
+  type: file
+  path: /verdaccio/logs/verdaccio.log
+  format: pretty
+  level: http

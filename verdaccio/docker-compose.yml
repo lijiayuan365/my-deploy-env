@@ -1,0 +1,26 @@
+services:
+  verdaccio:
+    image: verdaccio/verdaccio   # 或 :latest，建议固定版本如 6.x
+    container_name: verdaccio
+    restart: unless-stopped
+    ports:
+      - "4873:4873"               # 宿主机:容器内端口，可改成你想要的
+    volumes:
+      # 持久化存储（包文件、htpasswd、日志，映射到本地目录方便查看）
+      - ./verdaccio/storage:/verdaccio/storage
+      # 配置文件（强烈建议自己维护一份）
+      - ./config.yaml:/verdaccio/conf/config.yaml:ro
+      # 插件（如果用了自定义插件才需要）
+      - ./verdaccio/plugins:/verdaccio/plugins
+      # 日志（可选，但排查问题时非常有用）
+      - ./verdaccio/logs:/verdaccio/logs
+    environment:
+      - VERDACCIO_PORT=4873
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  verdaccio_plugins:
