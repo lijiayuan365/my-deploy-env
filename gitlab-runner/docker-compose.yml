@@ -1,0 +1,63 @@
+services:
+  gitlab-runner:
+    image: ${GITLAB_RUNNER_IMAGE:-gitlab/gitlab-runner:alpine}
+    container_name: gitlab-runner
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - ./config:/etc/gitlab-runner
+      - ./cache:/cache
+      - /var/run/docker.sock:/var/run/docker.sock
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  gitlab-runner-register:
+    profiles:
+      - register
+    image: ${GITLAB_RUNNER_IMAGE:-gitlab/gitlab-runner:alpine}
+    restart: "no"
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      CI_SERVER_URL: ${CI_SERVER_URL:-https://gitlab.com}
+      CLONE_URL: ${RUNNER_CLONE_URL:-}
+      RUNNER_NAME: ${RUNNER_NAME:-docker-runner}
+      RUNNER_EXECUTOR: ${RUNNER_EXECUTOR:-docker}
+      RUNNER_DOCKER_IMAGE: ${RUNNER_DOCKER_IMAGE:-alpine:3.20}
+      RUNNER_TOKEN: ${RUNNER_TOKEN:-}
+      RUNNER_REGISTRATION_TOKEN: ${RUNNER_REGISTRATION_TOKEN:-}
+    entrypoint:
+      - /bin/sh
+      - -lc
+    command:
+      - |
+        if [ -n "$$RUNNER_TOKEN" ]; then
+          gitlab-runner register --non-interactive \
+            --url "$$CI_SERVER_URL" \
+            --token "$$RUNNER_TOKEN" \
+            --template-config /etc/gitlab-runner/config.template.toml \
+            --executor "$$RUNNER_EXECUTOR" \
+            --docker-image "$$RUNNER_DOCKER_IMAGE" \
+            --description "$$RUNNER_NAME"
+        elif [ -n "$$RUNNER_REGISTRATION_TOKEN" ]; then
+          gitlab-runner register --non-interactive \
+            --url "$$CI_SERVER_URL" \
+            --registration-token "$$RUNNER_REGISTRATION_TOKEN" \
+            --template-config /etc/gitlab-runner/config.template.toml \
+            --executor "$$RUNNER_EXECUTOR" \
+            --docker-image "$$RUNNER_DOCKER_IMAGE" \
+            --description "$$RUNNER_NAME" \
+            --tag-list "${RUNNER_TAG_LIST:-docker}" \
+            --run-untagged "${RUNNER_RUN_UNTAGGED:-true}" \
+            --locked "${RUNNER_LOCKED:-false}" \
+            --access-level "${RUNNER_ACCESS_LEVEL:-not_protected}"
+        else
+          echo "Please set RUNNER_TOKEN (recommended) or RUNNER_REGISTRATION_TOKEN."
+          exit 1
+        fi
+    volumes:
+      - ./config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
